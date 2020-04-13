@@ -1,14 +1,49 @@
 Repository includes several implementations of Anomaly Detection solution based on InfluxDB \ TICK-stack.
 
 Generally, each folder contains separate project. Project includes mostly Kapacitor configuration and ML\DL Model to detect anomalies.
+The project name follow the template: _'data ingestion'-'data processing'-'ml-algorithm'-'visualization'_, which reflects how the main architectural layers are implemented.
 
-Also repository includes source of kapacitor UDF python agent code. It is included here as copy of https://github.com/influxdata/kapacitor + merged https://github.com/influxdata/kapacitor/pull/2311 .
 
-Current list of implemenations incluse following:
+Also repository includes source of kapacitor UDF python agent code in _'influx-anomaly/kapacitor'_ folder. It is included here as copy of https://github.com/influxdata/kapacitor + merged https://github.com/influxdata/kapacitor/pull/2311 .
 
-|Name \ Folder|Data source|Data Ingestion|Processing|Anomaly Detection|Vizualization|Publication|
-|:---|:---|:---|---|---|---|---|
-|kapacitor-udf-python_scikit_grafana_dummy|dummy data |python script, InfluxDB HTTP API, line protocol|Kapacitor, TICKscript tasks, python UDF agent, UDF function|Isolation Forest alg., scikit_learn lib.|Grafana, InfluxDB plugin, Graph element|Grafana Dashboard/Panel|  
+Current list of implemenations include following:
+
+<table>
+    <tr>
+        <td>Name \ Folder</td>
+        <td>Data source</td>
+        <td>Data Ingestion</td>
+        <td>Processing</td>
+        <td>Anomaly Detection</td>
+        <td>Vizualization / Publication</td>
+    </tr>
+    <tr>
+        <td>dummy-kapacitor_udf_python-scikit-grafana</td>
+        <td>
+	    <ul>
+		<li>dummy data</li>
+		<li>1 measurement</li>
+		<li>1 tag</li>
+		<li>3 float fileds</li>
+	    </ul>
+        <td>
+	    <ul>
+		<li>python script</li>
+		<li>InfluxDB HTTP API</li>
+		<li>line protocol</li>
+	    </ul>	
+	</td>
+        <td>
+	    <ul> <li>Kapacitor</li> <li>TICK script tasks</li> <li>python UDF agent</li> <li>UDF function</li></ul>
+	</td>
+        <td>
+	    <ul> <li>Isolation Forest alg.</li> <li>scikit_learn lib</li> </ul>
+	</td>
+        <td>
+	    <ul> <li>Grafana</li> <li>InfluxDB plugin</li> <li>Graph element</li>  <li>Dashboard</li> </ul>
+	</td>
+    </tr>
+</table>
 
 # Environment
 
