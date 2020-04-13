@@ -110,7 +110,13 @@ For example _kapacitor-udf-python_scikit_grafana_dummy_ use python stream to gen
 Configuration is made directly in python script `\test-data-ingestion-scripts\printer_data.py`
 
 1. Change the start date of the stream here:
-line 57: now = datetime(2020, 4, 13)
+line 57:
+``` 
+	now = datetime(2020, 4, 13)
+```
 
 2. Change time window here:
-line 64:  for i in range(60*60*2+2):
+line 64:  
+```
+	for i in range(60*60*2+2):
+```
