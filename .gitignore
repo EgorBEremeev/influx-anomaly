@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Docker container work files
+*/kapacitor/replay
+*/kapacitor/cluster.id
+*/kapacitor/server.id
+*/kapacitor/kapacitor.db

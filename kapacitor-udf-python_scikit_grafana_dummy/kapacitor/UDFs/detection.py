@@ -3,6 +3,7 @@ from scipy import stats
 import math
 from kapacitor.udf import udf_pb2
 import sys
+import os
 
 #Imports for the ADS model
 import numpy as np
@@ -22,7 +23,7 @@ class ADSHandler(Handler):
 
     #Empty var for the ADS-Model
     model = None
-
+    
     class state(object):
         def __init__(self):
             self._batch = []
@@ -48,7 +49,9 @@ class ADSHandler(Handler):
 
         # This loads the pretrained model.
         # Loading the model at the __init__ saves a lot of work
-        self.model = joblib.load('/var/lib/kapacitor/model/adsmodel.pkl')
+        #self.model = joblib.load('/var/lib/kapacitor/model/adsmodel.pkl')
+        model_path = os.environ['MODEL_PATH']        
+        self.model = joblib.load(model_path)
         self._state = ADSHandler.state()
 
         #self._points = []
@@ -167,11 +170,13 @@ class ADSHandler(Handler):
 
             self._agent.write_response(response)
 
-            # Field "period_label" indicates the time frame to highlight on a graph as anomaly
-			# The idea is that anomaly period starts at the last normal point.
-			# So, getting anomaly point we rewrite "period_label" of the previous point. 
-			# As Influx use point.time as a key field we send new "period_label" with time from the previous point.
-			if label == -1:
+            """
+            Field "period_label" indicates the time frame to highlight on a graph as anomaly
+            The idea is that anomaly period starts at the last normal point.
+            So, getting anomaly point we rewrite "period_label" of the previous point. 
+            As Influx use point.time as a key field we send new "period_label" with time from the previous point.
+            """
+            if label == -1:
                 response = udf_pb2.Response()
 
                 point_to_send = udf_pb2.Point()
