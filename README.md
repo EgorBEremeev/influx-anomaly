@@ -5,27 +5,28 @@ Also repository includes source of kapacitor UDF python agent code. It is includ
 
 Current list of implemenations incluse following:
 
-|name\folder							  |Data source|Data Ingestion|Processing|Anomaly Detection|Vizualization|Publication|
+|Name \ Folder|Data source|Data Ingestion|Processing|Anomaly Detection|Vizualization|Publication|
+|:---|:---|:---|---|---|---|---|
 |kapacitor-udf-python_scikit_grafana_dummy|dummy data |python script, InfluxDB HTTP API, line protocol|Kapacitor, TICKscript tasks, python UDF agent, UDF function|Isolation Forest alg., sci-kit_learn lib.|Grafana, InfluxDB plugin, Graph element|Grafana Dashboard/Panel|  
 
-Environment
+# Environment
 
-TICK-stack
-Projects structure supposed to run docker env of InfluxDB and Kapacitor. Chronograf can be used for more comfortable exploring data in db.
+## TICK-stack
+Projects structure supposed to run docker env of `InfluxDB` and `Kapacitor`. Optionally `Chronograf` can be used for more comfortable exploring data in db.
 
-You need kapacitor container/image with installed python3 and lib used by UDF\Model.
+You need kapacitor container/image with *installed python3 and lib used by UDF\Model*.
 
-TODO: Incude into repository submodule with kapacitor Dockerfile for image with installed python and kapacitor UDF python agent package
+_TODO_: Incude into repository submodule with kapacitor Dockerfile for image with installed python and kapacitor UDF python agent package
 
-Note: all commands below are given in Windows PowerShell syntax.
+> Note: all commands below are given in Windows PowerShell syntax.
 
-All InfluxDB, Kapacitor, Chronograf must be started in one docker network:
+1. Create docker network to run all InfluxDB, Kapacitor, Chronograf in it:
 
 ```
 	docker network create influxdb-network
 ```
 
-InfluxDB and Chronograf can be started with pretty standard configurations:
+2. InfluxDB and Chronograf can be started with pretty standard configurations:
 ```
 	docker run --name=influxdb -d `
 		--net=influxdb-network `
@@ -40,7 +41,7 @@ InfluxDB and Chronograf can be started with pretty standard configurations:
 		-v <path-to-work-dir>\chronograf_docker:/var/lib/chronograf `
       chronograf --influxdb-url=http://influxdb:8086
 ```
-Having kapacitor image you can run it with following command:
+3. Having kapacitor image you can run it with following command:
 
 ```
 	SET ${PWD} C:\git\influx-anomaly\kapacitor-udf-python_scikit_grafana_dummy
@@ -53,21 +54,21 @@ Having kapacitor image you can run it with following command:
 		-v ${PWD}/kapacitor:/var/lib/kapacitor `
 		-v ${PWD}/kapacitor/kapacitor.log:/var/log/kapacitor/kapacitor.log `
 		-v ${PWD}/kapacitor/kapacitor.conf:/etc/kapacitor/kapacitor.conf:ro `
-		-v ${PWD}/tmp/:/tmp/ `
+		-v ${PWD}/kapacitor/tmp/:/tmp/ `
 	k_with_p:3
 ```
 	
-UDF and Model dependencies
+## UDF and Model dependencies
 Initially UDF configuration in `kapacitor.conf` is commented. It is done so your virgin kapacitor container starts successully and you will able to install all required libs.
 The 'UDF' folder contains requirements.txt to install on kapacitor container
 
-After container has run connect it to like:
+1. After container has run connect it to like:
 	docker exec -it kapacitor_with_python bash
 
-Then inslall packeges with
+2. Then inslall packeges with
 
 ```lang-sh
 		cd /var/lib/kapacitor/UDFs && pip install -r requirements.txt
 ```
 	
-Finally uncomment udf configuration in `kapacitor.conf` and restart kapacitor container.
+3. Finally uncomment udf configuration in `kapacitor.conf` and restart kapacitor container.
