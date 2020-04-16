@@ -1,0 +1,29 @@
+#This is variant of Dockerfile started from official kapacitor. Considered as default
+#
+#This is working approach
+#
+#The minus of this approach is that you install default debian-stretch version. It is 3.5.
+#Also you need do more python env configuration manualy. Like symlink python-python3.
+#
+#The plus is that you maintain only one Dockerfile
+
+FROM kapacitor:latest
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+		python3 \
+		python3-pip \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir setuptools
+
+# install kapacitor udf python agent package
+COPY tmp/kapacitor /tmp/kapacitor
+WORKDIR /tmp/kapacitor/udf/agent/py
+RUN python3 setup.py install && python3 setup.py clean
+
+# install dependencies for UDFs
+COPY UDFs/requirements.txt /tmp/kapacitor/requirements.txt
+WORKDIR /tmp/kapacitor
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+WORKDIR /var/lib/kapacitor

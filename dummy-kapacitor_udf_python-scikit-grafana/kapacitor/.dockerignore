@@ -1,0 +1,5 @@
+/data
+/TICKscripts
+/kapacitor.conf
+/kapacitor.log
+/UDFs/*.py

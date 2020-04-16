@@ -1,0 +1,15 @@
+#VERSION: Py-KA_UDF-prj means official python image -> general kapacitor image with UDF agent -> project level image with UDF's dependencies
+#
+#The general kapacitor image with UDF agent are buidt from C:\git\influxdata-docker\kapacitor\1.5\python3.7-stretch
+#This is the second part, the second Dockerfile started from official python image
+#This is working approach
+#
+#The minus of this approach is that you need build the kapacitor level image and then this one project level
+#The plus is that you can choose easier python version just choosing image
+
+FROM k_with_p:5
+COPY UDFs/requirements.txt /tmp/kapacitor/requirements.txt
+WORKDIR /tmp/kapacitor
+RUN pip install -r requirements.txt
+
+WORKDIR /var/lib/kapacitor
