@@ -1,7 +1,7 @@
 dbrp "printer"."autogen"
 
-// This TICKscript monitors the temperature sensor,
-// and highlights anomalies if the temperatures start to experience abnormal behavior.
+// This TICKscript monitors the three temperatures for a 3d printing job,
+// and triggers alerts if the temperatures start to experience abnormal behavior.
 
 
 // Select the temperatures measurements
@@ -9,26 +9,30 @@ var data = stream
     |from()
         .measurement('temperatures')
         .where(lambda: isPresent("hotend"))
-	//Using WindowNode+MeanNode here resulting in down-sampling stream
     |window()
         .period(30s)
         .every(30s)
         .align()
     |mean('hotend')
       .as('average_hotend')
-	// This WindowNode produces batch as ads() UDF consumes batches
     |window()
         .period(5m)
         .every(5m)
         .align()
 
-
-data
-    //Run our ads() UDF on the hotend temperature
+var udf_response = data
+    //Run our tTest UDF on the hotend temperature
     @ads()
         // specify the hotend field
         .field('average_hotend')
-    //Adding anomaly score and labels in the same measurement
-	|influxDBOut()
-  		.database('printer')
-  		.measurement('temperatures')
+
+var write_score = udf_response
+ 	  |influxDBOut()
+  	 	 .database('printer')
+  		 .measurement('temperatures')
+
+var write_anomaly_meta = udf_response
+    |where(lambda: isPresent("anomaly_ends"))
+    |influxDBOut()
+        .database('printer')
+        .measurement('anomaly_period_meta')

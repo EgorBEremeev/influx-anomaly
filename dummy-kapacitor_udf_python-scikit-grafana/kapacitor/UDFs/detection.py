@@ -3,7 +3,6 @@ from scipy import stats
 import math
 from kapacitor.udf import udf_pb2
 import sys
-import os
 
 #Imports for the ADS model
 import numpy as np
@@ -17,16 +16,18 @@ logger = logging.getLogger()
 class ADSHandler(Handler):
     """
     Keep a rolling window of historically normal data
-    When a new window arrives use a IsolationForest Model to determine
-    anomaly score for every window point.
+    When a new window arrives use a two-sided t-test to determine
+    if the new window is statistically significantly different.
     """
 
     #Empty var for the ADS-Model
     model = None
-    
+
     class state(object):
         def __init__(self):
             self._batch = []
+            self._last_anomaly_starts = None
+            self._last_anomaly_ends = None
 
         def reset(self):
             self._batch = []
@@ -42,6 +43,10 @@ class ADSHandler(Handler):
             points = list(map(lambda x: x[1], self._batch))
             return points
 
+        def reset_anomaly_period(self):
+            self._last_anomaly_starts = None
+            self._last_anomaly_ends = None
+
 
     def __init__(self, agent):
         self._agent = agent
@@ -49,9 +54,7 @@ class ADSHandler(Handler):
 
         # This loads the pretrained model.
         # Loading the model at the __init__ saves a lot of work
-        #self.model = joblib.load('/var/lib/kapacitor/model/adsmodel.pkl')
-        model_path = os.environ['MODEL_PATH']        
-        self.model = joblib.load(model_path)
+        self.model = joblib.load('/var/lib/kapacitor/UDFs/adsmodel.pkl')
         self._state = ADSHandler.state()
 
         #self._points = []
@@ -82,17 +85,11 @@ class ADSHandler(Handler):
         """
         success = True
         msg = ''
-        #size = 0
+
         for opt in init_req.options:
             if opt.name == 'field':
                 self._field = opt.values[0].stringValue
-            # elif opt.name == 'size':
-            #     size = opt.values[0].intValue
 
-
-        # if size <= 1:
-        #     success = False
-        #     msg += ' must supply window size > 1'
         if self._field == '':
             success = False
             msg += ' must supply a field name'
@@ -115,20 +112,22 @@ class ADSHandler(Handler):
         return response
 
     def begin_batch(self, begin_req):
-        # logger.debug(f'Batch with following meta is begins: name={begin_req.name}, group={begin_req.group}, size={begin_req.size}' )
+#        logger.debug(f'Batch with following meta is begins: name={begin_req.name}, group={begin_req.group}, size={begin_req.size}' )
         # create new window for batch
         self._state.reset()
 
     def point(self, point):
         # Handling of the data when each point arrives at the script
         # Alternatively we can also run the ADS here but running it at end_batch is more efficient
+#        logger.debug(f'Point message fields: {point.name}, {point.group}, {point.database}, {point.dimensions}' )
         value = point.fieldsDouble[self._field]
         self._state.update(value, point)
 
     def end_batch(self, batch_meta):
 
-        # Converting the internal lists of data points and it's values into numpy array
-
+        # Converting the internal list of data points into numpy array
+        #values = list(map(lambda x: x[0], self._batch))
+        #points = list(map(lambda x: x[1], self._batch))
         values = self._state.get_point_values()
         points = self._state.get_points()
 
@@ -140,57 +139,65 @@ class ADSHandler(Handler):
             x_data = np.nan_to_num(x_data, nan=0.0)
 
         # Reshape the data so the array is correct for the ADS-Model
-        # Reshape since we only have one feature
+        # Reshape since we only have on feature
         x_data = x_data.reshape(-1,1)
 
         # Returns -1 for outliers and 1 for inliers.
         predictions = self.model.predict(x_data)
         probas = self.model.decision_function(x_data)
 
-        #logger.debug(f'Processed Batch contatins {len(points)} points, {len(predictions)} predictions, {len(probas)} probas' )
+#        logger.debug(f'Processed Batch contatins {len(points)} points, {len(predictions)} predictions, {len(probas)} probas' )
 
         prev_point_time = 0
         for label, score, point in zip(predictions, probas, points):
+            # Check the criteria the anomaly period has began and ended
+            # If anomaly perion has not detected yet
+            if self._state._last_anomaly_starts is None:
+                # And if the first anomaly point has come
+                if label == -1:
+                    # Then it is a criteria for anomaly period has began
+                    logger.debug(f'Anomaly period has began at: {self._state._last_anomaly_starts}')
+                    self._state._last_anomaly_starts = prev_point_time
+            # If anomaly period is already detected
+            else:
+                # And if next incoming point is detected as normal = as non-anomaly that it is criteria for anomaly period is over
+                if label == 1:
+                    logger.debug(f'Anomaly period that has began at: {self._state._last_anomaly_starts} has ended at: {point.time}. The point.time is: {point.time}. The label is: {label}')
+                    self._state._last_anomaly_ends = prev_point_time
+
+            # We send anomaly period metadata point when the period has ended
+            if self._state._last_anomaly_ends is not None:
+                # Then we send point with metadata about the anomaly period on the whole to be stored in the separate measurement.
+                # The measurement this point to be saved defined in the scope of Kapacitor Task!
+                # There point from the this UDF_Node filtered by the presence of "anomaly_ends" field:
+                # where(lambda: isPresent("anomaly_ends"))
+                response = udf_pb2.Response()
+                # timestamp to be used in measurement with anomaly perion metadata we set to the timestamp of the last anomaly point
+                response.point.time = self._state._last_anomaly_ends
+                response.point.fieldsInt["anomaly_begins"] = self._state._last_anomaly_starts
+                # using prev_point_time below affects visualization - visually the end of period is shown covering entire anomaly period, but not going out a one time step ahead
+                response.point.fieldsInt["anomaly_ends"] = self._state._last_anomaly_ends
+                self._agent.write_response(response)
+
+                # Update state that the last anomaly period has ended
+                self._state.reset_anomaly_period()
+
+            # We send additional anomaly attributes as new fields and tags to every point in the main value measurement
             response = udf_pb2.Response()
-            # response.point.time = batch_meta.tmax
-            # response.point.name = batch_meta.name
-            # response.point.group = batch_meta.group
-            # response.point.tags.update(batch_meta.tags)
-            point_to_send = udf_pb2.Point()
-            point_to_send.CopyFrom(point)
-            point_to_send.ClearField('fieldsDouble')
-            point_to_send.ClearField('fieldsInt')
-            point_to_send.ClearField('fieldsString')
-            point_to_send.ClearField('fieldsBool')
-            point_to_send.fieldsDouble["point_label"] = label
-            point_to_send.fieldsDouble["period_label"] = label
-            point_to_send.fieldsDouble["score"] = score
-
-            response.point.CopyFrom(point_to_send)
-
+            response.point.time = point.time
+            response.point.fieldsDouble["point_label"] = label
+            response.point.fieldsDouble["score"] = score
             self._agent.write_response(response)
 
-            """
-            Field "period_label" indicates the time frame to highlight on a graph as anomaly
-            The idea is that anomaly period starts at the last normal point.
-            So, getting anomaly point we rewrite "period_label" of the previous point. 
-            As Influx use point.time as a key field we send new "period_label" with time from the previous point.
-            """
-            if label == -1:
-                response = udf_pb2.Response()
+            # timestamp to be used for "period_label" points is set to the one time step back
+            # the begin of anamaly period is shown as last normal point
+            # the end of anomaly perion is shown as last anomaly point
+            # with this visually we see the period non-shifted relativly to the values graph
 
-                point_to_send = udf_pb2.Point()
-                point_to_send.CopyFrom(point)
-                point_to_send.ClearField('fieldsDouble')
-                point_to_send.ClearField('fieldsInt')
-                point_to_send.ClearField('fieldsString')
-                point_to_send.ClearField('fieldsBool')
-                point_to_send.time = prev_point_time
-                point_to_send.fieldsDouble["period_label"] = label
-
-                response.point.CopyFrom(point_to_send)
-
-                self._agent.write_response(response)
+            response = udf_pb2.Response()
+            response.point.time = prev_point_time
+            response.point.fieldsDouble["period_label"] = label
+            self._agent.write_response(response)
 
             prev_point_time = point.time
 
