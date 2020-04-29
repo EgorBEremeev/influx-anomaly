@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 services:
   influxdb:
     # Full tag list: https://hub.docker.com/r/library/influxdb/tags/
@@ -8,6 +8,8 @@ services:
       args:
         INFLUXDB_TAG: ${INFLUXDB_TAG}
     image: "influxdb"
+    networks:
+      - influxdb-network
     volumes:
       # Mount for influxdb data directory
       - ./influxdb/data:/var/lib/influxdb
@@ -20,45 +22,55 @@ services:
       # UDP Port
       - "8089:8089/udp"
 
-  telegraf:
-    # Full tag list: https://hub.docker.com/r/library/telegraf/tags/
-    build:
-      context: ./images/telegraf/
-      dockerfile: ./${TYPE}/Dockerfile
-      args:
-        TELEGRAF_TAG: ${TELEGRAF_TAG}
-    image: "telegraf"
-    environment:
-      HOSTNAME: "telegraf-getting-started"
-    # Telegraf requires network access to InfluxDB
-    links:
-      - influxdb
-    volumes:
-      # Mount for telegraf configuration
-      - ./telegraf/:/etc/telegraf/
-      # Mount for Docker API access
-      - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      - influxdb
+#  telegraf:
+#    # Full tag list: https://hub.docker.com/r/library/telegraf/tags/
+#    build:
+#      context: ./images/telegraf/
+#      dockerfile: ./${TYPE}/Dockerfile
+#      args:
+#        TELEGRAF_TAG: ${TELEGRAF_TAG}
+#    image: "telegraf"
+#    networks:
+#      - influxdb-network
+#    environment:
+#      HOSTNAME: "telegraf-getting-started"
+#    # Telegraf requires network access to InfluxDB
+##    links:
+##      - influxdb
+#    volumes:
+#      # Mount for telegraf configuration
+#      - ./telegraf/:/etc/telegraf/
+#      # Mount for Docker API access
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    depends_on:
+#      - influxdb
 
   kapacitor:
   # Full tag list: https://hub.docker.com/r/library/kapacitor/tags/
     build:
-      context: ./images/kapacitor/
-      dockerfile: ./${TYPE}/Dockerfile
+      context: ./kapacitor/
+      dockerfile: ./Dockerfile
       args:
         KAPACITOR_TAG: ${KAPACITOR_TAG}
     image: "kapacitor"
+    networks:
+      - influxdb-network
+    environment:
+      MODEL_PATH: "/var/lib/kapacitor/model/adsmodel.pkl"    
     volumes:
       # Mount for kapacitor data directory
-      - ./kapacitor/data/:/var/lib/kapacitor
+      - ./kapacitor/data:/var/lib/kapacitor/data
+      - ./kapacitor/UDFs:/var/lib/kapacitor/UDFs
+      - ./kapacitor/TICKscripts:/var/lib/kapacitor/TICKscripts
+      - ./kapacitor/kapacitor.log:/var/log/kapacitor/kapacitor.log
       # Mount for kapacitor configuration
-      - ./kapacitor/config/:/etc/kapacitor/
-      # Mount the ADS Folder
-      - <PATH_TO_YOUR_FOLDER>:/var/lib/kapacitor_ads
+      - ./kapacitor/kapacitor.conf:/etc/kapacitor/kapacitor.conf:ro
+      - ./kapacitor/tmp/:/tmp/
+      # Mount Anomaly Detection Model
+      - ./model:/var/lib/kapacitor/model
     # Kapacitor requires network access to Influxdb
-    links:
-      - influxdb
+ #   links:
+ #     - influxdb
     ports:
       # The API for Kapacitor is served on port 9092
       - "9092:9092"
@@ -71,25 +83,31 @@ services:
       args:
         CHRONOGRAF_TAG: ${CHRONOGRAF_TAG}
     image: "chrono_config"
+    networks:
+      - influxdb-network    
     environment:
       RESOURCES_PATH: "/usr/share/chronograf/resources"
     volumes:
       # Mount for chronograf database
       - ./chronograf/data/:/var/lib/chronograf/
-    links:
-      # Chronograf requires network access to InfluxDB and Kapacitor
-      - influxdb
-      - kapacitor
+#    links:
+#      # Chronograf requires network access to InfluxDB and Kapacitor
+#      - influxdb
+#      - kapacitor
     ports:
       # The WebUI for Chronograf is served on port 8888
       - "8888:8888"
     depends_on:
       - kapacitor
       - influxdb
-      - telegraf
+#      - telegraf
 
-  documentation:
-    build:
-      context: ./documentation
-    ports:
-      - "3010:3000"
+#  documentation:
+#    build:
+#      context: ./documentation
+#   ports:
+#      - "3010:3000"
+
+networks:
+  influxdb-network:
+    name: influxdb-network

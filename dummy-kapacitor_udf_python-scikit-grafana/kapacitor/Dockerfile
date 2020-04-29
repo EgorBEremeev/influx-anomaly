@@ -7,12 +7,20 @@
 #
 #The plus is that you maintain only one Dockerfile
 
-FROM kapacitor:latest
+#FROM kapacitor:latest
+ARG KAPACITOR_TAG
+FROM kapacitor:$KAPACITOR_TAG
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		python3 \
 		python3-pip \
 	&& rm -rf /var/lib/apt/lists/*
+
+# make some useful symlinks that are expected to exist
+RUN cd /usr/local/bin \
+	&& ln -sf /usr/bin/pydoc3 pydoc \
+	&& ln -sf /usr/bin/python3 python \
+	&& ln -sf /usr/bin/python3-config python-config
 
 RUN pip3 install --no-cache-dir setuptools
 
