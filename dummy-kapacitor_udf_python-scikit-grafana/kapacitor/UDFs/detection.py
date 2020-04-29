@@ -3,6 +3,7 @@ from scipy import stats
 import math
 from kapacitor.udf import udf_pb2
 import sys
+import os
 
 #Imports for the ADS model
 import numpy as np
@@ -16,8 +17,8 @@ logger = logging.getLogger()
 class ADSHandler(Handler):
     """
     Keep a rolling window of historically normal data
-    When a new window arrives use a two-sided t-test to determine
-    if the new window is statistically significantly different.
+    When a new window arrives use a IsolationForest Model to determine
+    anomaly score for every window point.
     """
 
     #Empty var for the ADS-Model
@@ -54,7 +55,9 @@ class ADSHandler(Handler):
 
         # This loads the pretrained model.
         # Loading the model at the __init__ saves a lot of work
-        self.model = joblib.load('/var/lib/kapacitor/UDFs/adsmodel.pkl')
+
+        model_path = os.environ['MODEL_PATH']        
+        self.model = joblib.load(model_path)
         self._state = ADSHandler.state()
 
         #self._points = []
