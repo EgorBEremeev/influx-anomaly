@@ -82,7 +82,7 @@ _TODO_: Incude into repository submodule with kapacitor Dockerfile for image wit
 > Important. The file `${PWD}/kapacitor/kapacitor.log` must exist on the host machine before running container. Overwise docker will create *folder* kapacitor.log instead of file and later kapacitor deamon will not able to open kapacitor.log to write into.
 
 ```
-	SET ${PWD} C:\git\influx-anomaly\kapacitor-udf-python_scikit_grafana_dummy
+	SET ${PWD} C:\git\influx-anomaly\dummy-kapacitor_udf_python-scikit-grafana
 	
 	docker run --name=kapacitor -d `
 		--net=influxdb-network `

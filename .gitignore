@@ -129,7 +129,8 @@ dmypy.json
 .pyre/
 
 # Docker container work files
-*/kapacitor/replay
-*/kapacitor/cluster.id
-*/kapacitor/server.id
-*/kapacitor/kapacitor.db
+*/kapacitor/data/*
+*/influxdb/*
+*/chronograf/*
+*/telegraf/*
+*/grafana/*
