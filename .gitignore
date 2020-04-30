@@ -130,7 +130,7 @@ dmypy.json
 
 # Docker container work files
 */kapacitor/data/*
-*/influxdb/*
-*/chronograf/*
-*/telegraf/*
-*/grafana/*
+*/influxdb/data*
+*/chronograf/data*
+*/telegraf/data*
+*/grafana/data*
