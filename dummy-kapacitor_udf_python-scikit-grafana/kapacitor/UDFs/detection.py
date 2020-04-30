@@ -12,6 +12,7 @@ import joblib
 
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(name)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(name)s: %(message)s')
 logger = logging.getLogger()
 
 class ADSHandler(Handler):
@@ -59,7 +60,7 @@ class ADSHandler(Handler):
         model_path = os.environ['MODEL_PATH']        
         self.model = joblib.load(model_path)
         self._state = ADSHandler.state()
-
+        logger.info(f'ADSHandler is initialized with Model: {self.model} loaded from {model_path}')
         #self._points = []
 
     def info(self):
@@ -118,6 +119,7 @@ class ADSHandler(Handler):
 #        logger.debug(f'Batch with following meta is begins: name={begin_req.name}, group={begin_req.group}, size={begin_req.size}' )
         # create new window for batch
         self._state.reset()
+#        logger.info(f'Batch begins')
 
     def point(self, point):
         # Handling of the data when each point arrives at the script
@@ -203,6 +205,7 @@ class ADSHandler(Handler):
             self._agent.write_response(response)
 
             prev_point_time = point.time
+ #       logger.info(f'Batch ended')
 
 if __name__ == '__main__':
     # Create an agent

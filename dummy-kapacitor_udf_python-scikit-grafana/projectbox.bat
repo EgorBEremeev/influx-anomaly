@@ -1,5 +1,5 @@
 @ECHO OFF
-TITLE sandbox.bat - TICK Sandbox
+TITLE projectbox.bat - dummy-kapacitor_udf_python-scikit-grafana Project Environment
 
 SET interactive=1
 SET COMPOSE_CONVERT_WINDOWS_PATHS=1
@@ -8,6 +8,7 @@ SET TYPE=latest
 SET TELEGRAF_TAG=latest
 SET INFLUXDB_TAG=latest
 SET CHRONOGRAF_TAG=latest
+REM Note the kapacitor image tag, it differs from official because we need python more than 3.5
 SET KAPACITOR_TAG=buster
 
 ECHO %cmdcmdline% | FIND /i "/c"
@@ -16,7 +17,7 @@ IF %ERRORLEVEL% == 0 SET interactive=0
 REM Enter attaches users to a shell in the desired container
 IF "%1"=="enter" (
     IF "%2"=="" (
-        ECHO sandbox enter ^(influxdb^|^|chronograf^|^|kapacitor^|^|telegraf^)
+        ECHO projectbox enter ^(influxdb^|^|chronograf^|^|kapacitor^|^|telegraf^)
         GOTO End
     )
     IF "%2"=="influxdb" (
@@ -44,7 +45,7 @@ IF "%1"=="enter" (
 REM Logs streams the logs from the container to the shell
 IF "%1"=="logs" (
     IF "%2"=="" (
-        ECHO sandbox logs ^(influxdb^|^|chronograf^|^|kapacitor^|^|telegraf^)
+        ECHO projectbox logs ^(influxdb^|^|chronograf^|^|kapacitor^|^|telegraf^)
         GOTO End
     )
     IF "%2"=="influxdb" (
@@ -71,62 +72,62 @@ IF "%1"=="logs" (
 
 
 IF "%1"=="up" (
-    IF "%2"=="-nightly" (
-        ECHO Spinning up nightly Docker Images...
-        ECHO If this is your first time starting sandbox this might take a minute...
-        SET TYPE=nightly
-        SET INFLUXDB_TAG=nightly
-        SET CHRONOGRAF_TAG=nightly
-        docker-compose up -d --build
-        ECHO Opening tabs in browser...
-        timeout /t 3 /nobreak > NUL
-        START "" http://localhost:3010
-        START "" http://localhost:8888
-        GOTO End  
-    ) ELSE (
 		ECHO Building Kapacitor image based on debian-buster and python 3.7
-		ECHO If this is your first time starting sandbox this might take a minute...
+		ECHO If this is your first time starting projectbox this might take a minute...
 		docker build -f ./images/kapacitor/buster/Dockerfile -t kapacitor:buster ./images/kapacitor/buster/
 		
         ECHO Spinning up latest, stable Docker Images for InfluxDB, Chronograf, Telegraf...
-        ECHO If this is your first time starting sandbox this might take a minute...
+        ECHO If this is your first time starting projectbox this might take a minute...
         docker-compose up -d --build
-        ECHO Opening tabs in browser...
-        timeout /t 3 /nobreak > NUL
-REM        START "" http://localhost:3010
-REM        START "" http://localhost:8888
+		timeout /t 10 /nobreak > NUL
+		ECHO Containers have running
+
+REM		PAUSE
+		ECHO Configuring Project artifacts...
+REM Create db for the current project. If you attempt to create a database that already exists, InfluxDB does nothing and does not return an error.
+		ECHO Creating database "printer" by InfluxDB HTTP API. If a database that already exists, InfluxDB does nothing and does not return an error.
+		ECHO Expected response is {"results":[{"statement_id":0}]}. If differ try to restart .bat or run manually: cmd.exe /c curl --data "q=CREATE DATABASE "printer"" http://localhost:8086/query
+		cmd.exe /c curl --data "q=CREATE DATABASE "printer"" http://localhost:8086/query
+REM		ECHO Configuring Kapacitor Task ads_demo...
+		docker exec -it dummy-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c "kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks"
+REM		ECHO Task "ads_demo" has configured. Check the task state in the Chronograf Manage Tasks tab.
+REM        ECHO Grafana is available on http://localhost:3000
+        ECHO Chronograf is available on http://localhost:8888
+		ECHO Kapacitor and Influx will sync subscription during 1 minutes. Wait before sending the test datastream by test-data-ingestion-scripts\printer_data.py
         GOTO End
     )
-)
+
 
 IF "%1"=="down" (
-    ECHO Stopping and removing running sandbox containers...
+    ECHO Stopping and removing running projectbox containers...
     docker-compose down
     GOTO End
 )
 
 IF "%1"=="restart" (
-    ECHO Stopping all sandbox processes...
+    ECHO Stopping all projectbox processes...
     docker-compose down >NUL 2>NUL
-    ECHO Starting all sandbox processes...
+    ECHO Starting all projectbox processes...
     docker-compose up -d --build >NUL 2>NUL
     ECHO Services available!
     GOTO End
 )
 
+REM We do not delete grafana data as user do not need import dashboards manualy again, it is more convenient 
 IF "%1"=="delete-data" (
     ECHO Deleting all influxdb, kapacitor and chronograf data...
     rmdir /S /Q kapacitor\data influxdb\data chronograf\data
     GOTO End
 )
+REM Dislike this command as it delete all images even those are not created by this script
 
-IF "%1"=="docker-clean" (
-    ECHO Stopping all running sandbox containers...
-    docker-compose down
-    echo Removing TICK images...
-    docker-compose down --rmi=all
-    GOTO End
-)
+REM IF "%1"=="docker-clean" (
+REM     ECHO Stopping all running projectbox containers...
+REM     docker-compose down
+REM     echo Removing TICK images...
+REM     docker-compose down --rmi=all
+REM     GOTO End
+REM )
 
 IF "%1"=="influxdb" (
     ECHO Entering the influx cli...
@@ -140,28 +141,28 @@ IF "%1"=="flux" (
     GOTO End
 )
 
-IF "%1"=="rebuild-docs" (
-    echo Rebuilding documentation container...
-    docker build -t sandbox_documentation documentation\  >NUL 2>NUL
-    echo "Restarting..."
-    docker-compose down >NUL 2>NUL
-    docker-compose up -d --build >NUL 2>NUL
-    GOTO End
-)
+REM IF "%1"=="rebuild-docs" (
+REM     echo Rebuilding documentation container...
+REM     docker build -t projectbox_documentation documentation\  >NUL 2>NUL
+REM     echo "Restarting..."
+REM     docker-compose down >NUL 2>NUL
+REM     docker-compose up -d --build >NUL 2>NUL
+REM     GOTO End
+REM )
 
-ECHO sandbox commands:
-ECHO   up           -^> spin up the sandbox environment
-ECHO   down         -^> tear down the sandbox environment
-ECHO   restart      -^> restart the sandbox
+ECHO projectbox commands:
+ECHO   up           -^> spin up the projectbox environment
+ECHO   down         -^> tear down the projectbox environment
+ECHO   restart      -^> restart the projectbox
 ECHO   influxdb     -^> attach to the influx cli
-ECHO   flux         -^> attach to the flux REPL
+REM ECHO   flux         -^> attach to the flux REPL
 ECHO.
 ECHO   enter ^(influxdb^|^|kapacitor^|^|chronograf^|^|telegraf^) -^> enter the specified container
 ECHO   logs  ^(influxdb^|^|kapacitor^|^|chronograf^|^|telegraf^) -^> stream logs for the specified container
 ECHO.
 ECHO   delete-data  -^> delete all data created by the TICK Stack
-ECHO   docker-clean -^> stop and remove all running docker containers and images
-ECHO   rebuild-docs -^> rebuild the documentation image
+REM ECHO   docker-clean -^> stop and remove all running docker containers and images
+REM ECHO   rebuild-docs -^> rebuild the documentation image
 
 :End
 IF "%interactive%"=="0" PAUSE
