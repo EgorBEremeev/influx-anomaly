@@ -86,12 +86,12 @@ REM		PAUSE
 		ECHO Configuring Project artifacts...
 REM Create db for the current project. If you attempt to create a database that already exists, InfluxDB does nothing and does not return an error.
 		ECHO Creating database "printer" by InfluxDB HTTP API. If a database that already exists, InfluxDB does nothing and does not return an error.
-		ECHO Expected response is {"results":[{"statement_id":0}]}. If differ try to restart .bat or run manually: cmd.exe /c curl --data "q=CREATE DATABASE "printer"" http://localhost:8086/query
+		ECHO Expected response is {"results":[{"statement_id":0}]}. If differ then try to restart .bat or run manually: cmd.exe /c curl --data "q=CREATE DATABASE "printer"" http://localhost:8086/query
 		cmd.exe /c curl --data "q=CREATE DATABASE "printer"" http://localhost:8086/query
 REM		ECHO Configuring Kapacitor Task ads_demo...
 		docker exec -it dummy-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c "kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks"
 REM		ECHO Task "ads_demo" has configured. Check the task state in the Chronograf Manage Tasks tab.
-REM        ECHO Grafana is available on http://localhost:3000
+        ECHO Grafana is available on http://localhost:3001
         ECHO Chronograf is available on http://localhost:8888
 		ECHO Kapacitor and Influx will sync subscription during 1 minutes. Wait before sending the test datastream by test-data-ingestion-scripts\printer_data.py
         GOTO End
@@ -134,13 +134,14 @@ IF "%1"=="influxdb" (
     docker-compose exec influxdb /usr/bin/influx
     GOTO End
 )
+REM This option does not used in current prototype version
+REM IF "%1"=="flux" (
+REM     ECHO Entering the flux cli...
+REM     docker-compose exec influxdb /usr/bin/influx -type flux
+REM     GOTO End
+REM )
 
-IF "%1"=="flux" (
-    ECHO Entering the flux cli...
-    docker-compose exec influxdb /usr/bin/influx -type flux
-    GOTO End
-)
-
+REM This is optional command to local access native Influx Docs
 REM IF "%1"=="rebuild-docs" (
 REM     echo Rebuilding documentation container...
 REM     docker build -t projectbox_documentation documentation\  >NUL 2>NUL
