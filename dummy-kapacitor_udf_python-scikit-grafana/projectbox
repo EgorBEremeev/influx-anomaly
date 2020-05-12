@@ -14,7 +14,7 @@ fi
 
 projectbox () {
 
-  source .env-latest
+  source .env
   echo "Using latest, stable releases"
 
   # Enter attaches users to a shell in the desired container
