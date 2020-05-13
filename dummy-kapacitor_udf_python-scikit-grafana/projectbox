@@ -14,7 +14,8 @@ fi
 
 projectbox () {
 
-  source .env
+  source .env-latest
+  echo "INFLUXDB_TAG = " $INFLUXDB_TAG
   echo "Using latest, stable releases"
 
   # Enter attaches users to a shell in the desired container
@@ -73,6 +74,7 @@ projectbox () {
       echo "If this is your first time starting projectbox this might take a minute..."
       docker build -f ./images/kapacitor/buster/Dockerfile -t kapacitor:buster ./images/kapacitor/buster/
 
+      echo ""
       echo "Spinning up Docker Images..."
       echo "If this is your first time starting projectbox this might take a minute..."
       docker-compose up -d --build
@@ -81,16 +83,24 @@ projectbox () {
       echo Configuring Project artifacts...
 
 #     Create db for the current project. If you attempt to create a database that already exists, InfluxDB does nothing and does not return an error.
-      echo Creating database "printer" by InfluxDB HTTP API. If a database that already exists, InfluxDB does nothing and does not return an error.
-      echo Expected response is {"results":[{"statement_id":0}]}.
-	  echo If actual result differs then try run manually: curl -XPOST 'http://localhost:8086/query' --data-urlencode 'q=CREATE DATABASE "printer"'
-      curl -XPOST 'http://localhost:8086/query' --data-urlencode 'q=CREATE DATABASE "printer"'
+      echo ""
+      echo "Creating database \"printer\" by InfluxDB HTTP API..."
+      curl -XPOST 'http://localhost:8086/query' --data-urlencode 'q=CREATE DATABASE "printer"'	  
+	  echo "If a database that already exists, InfluxDB does nothing and does not return an error."
+      echo "Expected response is: {\"results\":[{\"statement_id\":0}]}."
+      echo "If actual result differs then try run manually: curl -XPOST 'http://localhost:8086/query' --data-urlencode 'q=CREATE DATABASE \"printer\"'"
 
-#	  Configuring Kapacitor Task ads_demo...
-		docker exec -it dummy-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c "kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks"
 
-      echo "Opening tabs in browser..."
       sleep 3
+#     Configuring Kapacitor Task ads_demo...
+      echo ""
+      echo "Define and enable kapacitor task..."
+      docker exec -it dummy-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c "kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks"
+      echo "Expected result is \"ads_demo stream    enabled   true      [\"printer\".\"autogen\"]\""
+      echo "If actual result differs then try run manually: docker exec -it dummy-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c \"kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks\""
+
+      sleep 3
+      echo ""
       echo "Grafana is available on http://localhost:3001"
       echo "Chronograf is available on http://localhost:8888"
       echo "Kapacitor and Influx will sync subscription during 1 minutes. Wait before sending the test data stream by test-data-ingestion-scripts\printer_data.py"

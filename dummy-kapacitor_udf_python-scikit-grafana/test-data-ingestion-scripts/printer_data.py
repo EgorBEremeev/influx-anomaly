@@ -54,7 +54,7 @@ def main():
 
     # Start from 2016-01-01 00:00:00 UTC
     # This makes it easy to reason about the data later
-    now = datetime(2020, 4, 13)
+    now = datetime(2020, 5, 13)
     second = timedelta(seconds=1)
     epoch = datetime(1970,1,1)
 
