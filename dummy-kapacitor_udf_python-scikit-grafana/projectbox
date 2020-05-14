@@ -62,7 +62,10 @@ projectbox () {
         echo "Following the logs from the telegraf container..."
         docker-compose logs -f telegraf
         ;;
-      *)
+      grafana)
+        echo "Following the logs from the telegraf container..."
+        docker-compose logs -f grafana
+        ;;      *)
         echo "projectbox logs (influxdb||chronograf||kapacitor||telegraf)"
         ;;
     esac
@@ -73,6 +76,10 @@ projectbox () {
       echo "Building Kapacitor image based on debian-buster and python 3.7"
       echo "If this is your first time starting projectbox this might take a minute..."
       docker build -f ./images/kapacitor/buster/Dockerfile -t kapacitor:buster ./images/kapacitor/buster/
+
+#     Grafana image runs with default user 472. That has side effect if /var/lib/grafana is mounted as volume with host folder: the folder on host must exist and has write permissions for 472 user  
+	  mkdir ./grafana/data/
+	  chown 472.472 ./grafana/data -R
 
       echo ""
       echo "Spinning up Docker Images..."
