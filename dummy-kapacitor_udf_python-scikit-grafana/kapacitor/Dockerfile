@@ -14,6 +14,15 @@ FROM kapacitor:$KAPACITOR_TAG
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		python3 \
 		python3-pip \
+		bzip2 \
+		file \
+		xz-utils \
+		build-essential \
+		python3-dev \
+		gfortran \
+		libatlas-base-dev \
+		libopenblas-dev \
+		liblapack-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 # make some useful symlinks that are expected to exist
@@ -32,6 +41,6 @@ RUN python3 setup.py install && python3 setup.py clean
 # install dependencies for UDFs
 COPY UDFs/requirements.txt /tmp/kapacitor/requirements.txt
 WORKDIR /tmp/kapacitor
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --extra-index-url=https://www.piwheels.org/simple --no-cache-dir -r requirements.txt
 
 WORKDIR /var/lib/kapacitor

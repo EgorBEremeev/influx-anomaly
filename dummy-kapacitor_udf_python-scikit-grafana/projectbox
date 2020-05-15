@@ -78,8 +78,12 @@ projectbox () {
       docker build -f ./images/kapacitor/buster/Dockerfile -t kapacitor:buster ./images/kapacitor/buster/
 
 #     Grafana image runs with default user 472. That has side effect if /var/lib/grafana is mounted as volume with host folder: the folder on host must exist and has write permissions for 472 user  
-	  mkdir ./grafana/data/
-	  chown 472.472 ./grafana/data -R
+      if [ ! -d "./grafana/data/" ]
+      then
+        mkdir ./grafana/data/
+        echo "Generating data folder for grafana"
+      fi
+      chown 472.472 ./grafana/data -R
 
       echo ""
       echo "Spinning up Docker Images..."
