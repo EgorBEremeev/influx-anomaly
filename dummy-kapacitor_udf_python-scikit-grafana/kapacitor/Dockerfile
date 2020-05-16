@@ -23,6 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		libatlas-base-dev \
 		libopenblas-dev \
 		liblapack-dev \
+		python3-scipy \
+		python3-numpy \
+		cython3 \
 	&& rm -rf /var/lib/apt/lists/*
 
 # make some useful symlinks that are expected to exist
