@@ -77,7 +77,7 @@ projectbox () {
       echo "If this is your first time starting projectbox this might take a minute..."
       docker build -f ./images/kapacitor/buster/Dockerfile -t kapacitor:buster ./images/kapacitor/buster/
 
-#     Grafana image runs with default user 472. That has side effect if /var/lib/grafana is mounted as volume with host folder: the folder on host must exist and has write permissions for 472 user  
+#     Grafana image runs with default user 472. That has side effect if /var/lib/grafana is mounted as volume with host folder: the folder on host must exist and has write permissions for 472 user
       if [ ! -d "./grafana/data/" ]
       then
         mkdir ./grafana/data/
@@ -90,13 +90,13 @@ projectbox () {
       echo "If this is your first time starting projectbox this might take a minute..."
       docker-compose up -d --build
 
-#     Configuring Project artifacts	  
+#     Configuring Project artifacts
       echo Configuring Project artifacts...
 
 #     Create db for the current project. If you attempt to create a database that already exists, InfluxDB does nothing and does not return an error.
       echo ""
       echo "Creating database \"printer\" by InfluxDB HTTP API..."
-      curl -XPOST 'http://localhost:8086/query' --data-urlencode 'q=CREATE DATABASE "printer"'	  
+      curl -XPOST 'http://localhost:8086/query' --data-urlencode 'q=CREATE DATABASE "printer"'
 	  echo "If a database that already exists, InfluxDB does nothing and does not return an error."
       echo "Expected response is: {\"results\":[{\"statement_id\":0}]}."
       echo "If actual result differs then try run manually: curl -XPOST 'http://localhost:8086/query' --data-urlencode 'q=CREATE DATABASE \"printer\"'"
@@ -106,9 +106,9 @@ projectbox () {
 #     Configuring Kapacitor Task ads_demo...
       echo ""
       echo "Define and enable kapacitor task..."
-      docker exec -it dummy-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c "kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks"
+      docker exec -it proto-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c "kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks"
       echo "Expected result is \"ads_demo stream    enabled   true      [\"printer\".\"autogen\"]\""
-      echo "If actual result differs then try run manually: docker exec -it dummy-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c \"kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks\""
+      echo "If actual result differs then try run manually: docker exec -it proto-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c \"kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks\""
 
       sleep 3
       echo ""
@@ -132,7 +132,7 @@ projectbox () {
       rm -rf kapacitor/data influxdb/data chronograf/data
       ;;
 #   Dislike this command as it delete all images even those are not created by this script
-#   Comment this while development and evaluation. It is not hard to clean everything manually  
+#   Comment this while development and evaluation. It is not hard to clean everything manually
 #    docker-clean)
 #      echo "Stopping and removing running projectbox containers..."
 #      docker-compose down

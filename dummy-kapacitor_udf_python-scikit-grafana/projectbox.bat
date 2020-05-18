@@ -1,5 +1,5 @@
 @ECHO OFF
-TITLE projectbox.bat - dummy-kapacitor_udf_python-scikit-grafana Project Environment
+TITLE projectbox.bat - proto-kapacitor_udf_python-scikit-grafana Project Environment
 
 SET interactive=1
 SET COMPOSE_CONVERT_WINDOWS_PATHS=1
@@ -75,7 +75,7 @@ IF "%1"=="up" (
 		ECHO Building Kapacitor image based on debian-buster and python 3.7
 		ECHO If this is your first time starting projectbox this might take a minute...
 		docker build -f ./images/kapacitor/buster/Dockerfile -t kapacitor:buster ./images/kapacitor/buster/
-		
+
         ECHO Spinning up latest, stable Docker Images for InfluxDB, Chronograf, Telegraf...
         ECHO If this is your first time starting projectbox this might take a minute...
         docker-compose up -d --build
@@ -89,7 +89,7 @@ REM Create db for the current project. If you attempt to create a database that 
 		ECHO Expected response is {"results":[{"statement_id":0}]}. If differ then try to restart .bat or run manually: cmd.exe /c curl --data "q=CREATE DATABASE "printer"" http://localhost:8086/query
 		cmd.exe /c curl --data "q=CREATE DATABASE "printer"" http://localhost:8086/query
 REM		ECHO Configuring Kapacitor Task ads_demo...
-		docker exec -it dummy-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c "kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks"
+		docker exec -it proto-kapacitor_udf_python-scikit-grafana_kapacitor_1 bash -c "kapacitor define ads_demo -tick ./TICKscripts/ads_demo.tick && kapacitor enable ads_demo && kapacitor list tasks"
 REM		ECHO Task "ads_demo" has configured. Check the task state in the Chronograf Manage Tasks tab.
         ECHO Grafana is available on http://localhost:3001
         ECHO Chronograf is available on http://localhost:8888
@@ -113,7 +113,7 @@ IF "%1"=="restart" (
     GOTO End
 )
 
-REM We do not delete grafana data as user do not need import dashboards manualy again, it is more convenient 
+REM We do not delete grafana data as user do not need import dashboards manualy again, it is more convenient
 IF "%1"=="delete-data" (
     ECHO Deleting all influxdb, kapacitor and chronograf data...
     rmdir /S /Q kapacitor\data influxdb\data chronograf\data
